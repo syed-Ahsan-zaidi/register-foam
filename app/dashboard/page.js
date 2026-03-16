@@ -1,30 +1,41 @@
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
+import DashboardContent from './DashboardContent';
 import { redirect } from 'next/navigation';
-import DashboardContent from './DashboardContent'; // Import the new component
+import pool from '@/lib/db'; // Database se products lane ke liye
 
+// YE KEY EXACT WAHI HONI CHAHIYE JO actions/auth.js MEIN HAI
 const SECRET = new TextEncoder().encode('my-super-secret-key-12345');
 
-async function getProducts() {
-    const res = await fetch('https://fakestoreapi.com/products?limit=20');
-    if (!res.ok) throw new Error('Failed to fetch products');
-    return res.json();
-}
-
-export default async function Dashboard() {
+export default async function DashboardPage() {
     const cookieStore = await cookies();
-    const token = cookieStore.get('auth_token')?.value;
+    const token = cookieStore.get('auth_token');
 
-    if (!token) redirect('/login');
+    // 1. Agar cookie nahi mili
+    if (!token) {
+        console.log("Token nahi mila, redirecting to login...");
+        redirect('/login');
+    }
 
     try {
-        const { payload } = await jwtVerify(token, SECRET);
-        const products = await getProducts();
-
-        // Sirf client component return karein
-        return <DashboardContent products={products} adminEmail={payload.email} adminName={payload.name} />;
+        // 2. Token verify karein
+        const { payload } = await jwtVerify(token.value, SECRET);
         
+        // 3. Database se products dhoond kar layein (optional)
+        const res = await pool.query('SELECT * FROM products ORDER BY id DESC');
+        const products = res.rows;
+
+        // 4. Sab sahi hai toh content dikhao
+        return (
+            <DashboardContent 
+                products={products} 
+                adminEmail={payload.email} 
+                adminName={payload.name || 'Admin'} 
+            />
+        );
     } catch (error) {
+        console.error("JWT Verification failed:", error);
+        // 5. Agar token purana ya ghalat hai
         redirect('/login');
     }
 }
