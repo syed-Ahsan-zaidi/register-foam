@@ -1,8 +1,11 @@
 'use client';
 import { useState } from 'react';
-import { logoutUser } from '@/app/actions/auth';
+// Yahan ye line add karein:
+import { logoutUser } from '../actions/auth'; 
+import Link from 'next/link';
 
 export default function DashboardContent({ products, adminEmail, adminName }) {
+    // ... baqi ka code
     const [activeTab, setActiveTab] = useState('inventory');
     
     // Initial order mein adminName use ho raha hai
