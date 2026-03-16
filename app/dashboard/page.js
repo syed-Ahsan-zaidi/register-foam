@@ -2,10 +2,22 @@ import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
 import DashboardContent from './DashboardContent';
 import { redirect } from 'next/navigation';
-// pool ko abhi comment kar dein agar products table nahi bana
-// import pool from '@/lib/db'; 
+import pool from '@/lib/db'; 
+
+// Next.js ko har baar database se naya data fetch karne par majboor karta hai
+export const revalidate = 0; 
 
 const SECRET = new TextEncoder().encode('my-super-secret-key-12345');
+
+async function getProducts() {
+    try {
+        const res = await pool.query('SELECT * FROM products ORDER BY id DESC');
+        return res.rows;
+    } catch (error) {
+        console.error("DATABASE_ERROR:", error.message);
+        return [];
+    }
+}
 
 export default async function DashboardPage() {
     const cookieStore = await cookies();
@@ -18,8 +30,8 @@ export default async function DashboardPage() {
     try {
         const { payload } = await jwtVerify(token.value, SECRET);
         
-        // Agar products table nahi bana toh khali array bhej dein
-        const products = []; 
+        // Data fetch ho raha hai
+        const products = await getProducts(); 
 
         return (
             <DashboardContent 
