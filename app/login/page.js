@@ -2,12 +2,13 @@
 import { useState } from 'react';
 import { loginUser } from '../actions/auth';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation'; // 1. Router import kiya
 
 export default function Login() {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const router = useRouter(); // 2. Router initialize kiya
 
-    // Yahan se ': FormData' hata diya hai taake page.js mein error na aaye
     async function handleSubmit(formData) {
         setLoading(true);
         setError(''); 
@@ -18,6 +19,9 @@ export default function Login() {
             if (result?.error) {
                 setError(result.error);
                 setLoading(false);
+            } else {
+                // 3. Success par dashboard par bhej dega
+                router.push('/dashboard'); 
             }
         } catch (e) {
             setError("Kuch ghalat ho gaya. Dubara koshish karein.");
