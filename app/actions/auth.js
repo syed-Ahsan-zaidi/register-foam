@@ -1,36 +1,11 @@
 'use server'
-
 import pool from '@/lib/db';
 import bcrypt from 'bcrypt';
 import { cookies } from 'next/headers';
 import { SignJWT } from 'jose';
-import { redirect } from 'next/navigation';
 
 const SECRET = new TextEncoder().encode('my-super-secret-key-12345');
 
-// --- 1. REGISTER USER ACTION ---
-export async function registerUser(formData) {
-    const name = formData.get('name');
-    const email = formData.get('email');
-    const password = formData.get('password');
-
-    try {
-        const hashedPassword = await bcrypt.hash(password, 10);
-        await pool.query(
-            'INSERT INTO users (name, email, password) VALUES ($1, $2, $3)',
-            [name, email, hashedPassword]
-        );
-    } catch (error) {
-        if (error.code === '23505') { 
-            return { error: "Ye email pehle se register hai!" };
-        }
-        return { error: "Registration fail ho gayi." };
-    }
-
-    redirect('/login');
-}
-
-// --- 2. LOGIN USER ACTION ---
 export async function loginUser(formData) {
     const email = formData.get('email');
     const password = formData.get('password');
@@ -57,25 +32,15 @@ export async function loginUser(formData) {
         cookieStore.set('auth_token', token, { 
             httpOnly: true,
             path: '/',
-            secure: process.env.NODE_ENV === 'production', 
+            secure: true, 
+            sameSite: 'lax'
         });
 
+        // Redirect yahan se hata diya hai, ab success bhej rahe hain
+        return { success: true }; 
+
     } catch (error) {
-        // Next.js redirect errors ko catch block mein handle karna zaroori hai
-        if (error.digest?.includes('NEXT_REDIRECT')) throw error;
-        return { error: "Login error!" };
+        console.error("Login Database Error:", error);
+        return { error: "Database se rabta nahi ho saka." };
     }
-
-    redirect('/dashboard');
-}
-
-// --- 3. LOGOUT USER ACTION (Naya Add Kiya Gaya) ---
-export async function logoutUser() {
-    const cookieStore = await cookies();
-    
-    // Cookie ko delete karein taake session khatam ho jaye
-    cookieStore.delete('auth_token');
-    
-    // Wapis login page par redirect karein
-    redirect('/login');
 }
